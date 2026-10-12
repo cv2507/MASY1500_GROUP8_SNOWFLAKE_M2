@@ -3,33 +3,6 @@ load_cfpb_to_snowflake.py
 =========================
 MASY1-GC1500 Database Management - Capstone Milestone 2 (Group 8)
 Owner: Keyanna Bernard (krb9975), Data Engineer
-
-Loads the CFPB Consumer Complaint snapshot into Snowflake and populates the
-3NF schema in CFPB_CAPSTONE_DB.CFPB_SCHEMA, end to end, with no manual steps.
-
-The script follows the course's five-pattern approach:
-    1. CONNECT    - build a SQLAlchemy engine for Snowflake
-    2. EXTRACT    - pandas.read_csv on the frozen CFPB snapshot
-    3. TRANSFORM  - rename and clean columns to match RAW_COMPLAINTS
-    4. LOAD       - DataFrame.to_sql into the RAW_COMPLAINTS staging table,
-                    then set-based INSERT ... SELECT into the 3NF tables
-    5. VERIFY     - row counts and a batch entry in COMPLAINT_DQA_AUDIT
-
-Setup (once):
-    pip install pandas "snowflake-connector-python[pandas]" snowflake-sqlalchemy "sqlalchemy<2.1"
-
-Credentials are read from environment variables, never hard-coded:
-    SNOWFLAKE_ACCOUNT        e.g. gsvfbpn-hl39049   (org-account from the Snowsight URL)
-    SNOWFLAKE_USER           e.g. KRB9975
-    SNOWFLAKE_PASSWORD       (omit when using externalbrowser)
-    SNOWFLAKE_AUTHENTICATOR  optional: "externalbrowser" for Google/SSO sign-in
-    SNOWFLAKE_ROLE           optional, default PUBLIC (the team grants it
-                             SELECT/INSERT/UPDATE/DELETE on the schema)
-    SNOWFLAKE_WAREHOUSE      optional, default COMPUTE_WH
-
-Usage:
-    python load_cfpb_to_snowflake.py complaints.csv              # 10,000-row sample
-    python load_cfpb_to_snowflake.py complaints.csv --rows 0     # full file
 """
 
 import argparse
@@ -65,9 +38,8 @@ COLUMN_MAP = {
 }
 
 
-# ---------------------------------------------------------------------------
 # 1. CONNECT
-# ---------------------------------------------------------------------------
+
 def get_engine():
     """Create a SQLAlchemy engine for Snowflake from environment variables."""
     try:
@@ -84,16 +56,14 @@ def get_engine():
 
     authenticator = os.environ.get("SNOWFLAKE_AUTHENTICATOR")
     if authenticator:
-        params["authenticator"] = authenticator      # e.g. externalbrowser
+        params["authenticator"] = authenticator      
     else:
         params["password"] = os.environ.get("SNOWFLAKE_PASSWORD", "")
 
     return create_engine(URL(**params))
 
 
-# ---------------------------------------------------------------------------
 # 2. EXTRACT
-# ---------------------------------------------------------------------------
 def extract(csv_path, row_limit):
     """Read the CFPB snapshot. Everything is read as text; types are set in SQL."""
     nrows = row_limit if row_limit and row_limit > 0 else None
@@ -110,19 +80,16 @@ def extract(csv_path, row_limit):
     print(f"[extract]   read {len(df):,} rows from {csv_path}")
     return df
 
-
-# ---------------------------------------------------------------------------
 # 3. TRANSFORM
-# ---------------------------------------------------------------------------
+
 def transform(df):
     """Rename to RAW_COMPLAINTS columns, trim text, drop unusable rows."""
     df = df.rename(columns=COLUMN_MAP)[list(COLUMN_MAP.values())]
 
-    # Trim whitespace in every column; blank strings become NULL.
     df = df.apply(lambda s: s.str.strip())
     df = df.mask(df == "")
 
-    # A complaint without a numeric ID cannot be keyed in the fact table.
+
     before = len(df)
     df = df[pd.to_numeric(df["COMPLAINT_ID"], errors="coerce").notna()]
 
@@ -134,13 +101,8 @@ def transform(df):
     return df, rejected
 
 
-# ---------------------------------------------------------------------------
+
 # 4. LOAD
-# ---------------------------------------------------------------------------
-# Set-based SQL that moves staged rows into the 3NF tables. Matches the logic
-# in 02_CFPB_3NF_DDL_Schema so the deployed tables are reproduced exactly.
-# DELETE (not TRUNCATE) so the script only needs the DELETE privilege that the
-# team grants to PUBLIC. Fact table first, then dimensions, then staging.
 CLEAR_SQL = [
     "DELETE FROM CONSUMER_COMPLAINTS",
     "DELETE FROM FINANCIAL_COMPANIES",
@@ -218,13 +180,10 @@ def load(engine, df):
     """Stage the DataFrame, then populate the 3NF tables in one transaction."""
     with engine.begin() as conn:
         conn.execute(text(f"USE SCHEMA {DATABASE}.{SCHEMA}"))
-        for stmt in CLEAR_SQL:                       # makes reruns idempotent
+        for stmt in CLEAR_SQL:                       
             conn.execute(text(stmt))
 
-    # to_sql with multi-row INSERTs: needs only the INSERT privilege (a staged
-    # bulk load would also need CREATE STAGE, which PUBLIC does not have).
-    # The table name is lower case so SQLAlchemy matches the existing
-    # RAW_COMPLAINTS table; column names are lower case for the same reason.
+ 
     df.rename(columns=str.lower).to_sql(
         "raw_complaints",
         engine,
@@ -241,9 +200,8 @@ def load(engine, df):
     print("[load]      populated the 3NF dimension and fact tables")
 
 
-# ---------------------------------------------------------------------------
+
 # 5. VERIFY
-# ---------------------------------------------------------------------------
 def verify(engine, rejected_in_python):
     """Print row counts and record the batch in COMPLAINT_DQA_AUDIT."""
     tables = [
@@ -262,7 +220,7 @@ def verify(engine, rejected_in_python):
         ingested = int(n["CONSUMER_COMPLAINTS"])
         rejected = int(rejected_in_python + n["RAW_COMPLAINTS"] - ingested)
 
-        # Orphan check: Snowflake does not enforce FKs, so check them here.
+        # Orphan check
         orphans = conn.execute(text("""
             SELECT COUNT_IF(company_id IS NULL), COUNT_IF(product_id IS NULL),
                    COUNT_IF(issue_id IS NULL),   COUNT_IF(location_id IS NULL)
@@ -292,12 +250,12 @@ def main():
                         help="Rows to load (default 10000; 0 = whole file)")
     args = parser.parse_args()
 
-    engine = get_engine()                                   # 1. CONNECT
+    engine = get_engine()                                   
     try:
-        raw = extract(args.csv_path, args.rows)             # 2. EXTRACT
-        clean, rejected = transform(raw)                    # 3. TRANSFORM
-        load(engine, clean)                                 # 4. LOAD
-        verify(engine, rejected)                            # 5. VERIFY
+        raw = extract(args.csv_path, args.rows)             
+        clean, rejected = transform(raw)                    
+        load(engine, clean)                                 
+        verify(engine, rejected)                            
     finally:
         engine.dispose()
 
