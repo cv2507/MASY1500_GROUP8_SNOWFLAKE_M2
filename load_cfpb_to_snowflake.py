@@ -1,10 +1,3 @@
-"""
-load_cfpb_to_snowflake.py
-=========================
-MASY1-GC1500 Database Management - Capstone Milestone 2 (Group 8)
-Owner: Keyanna Bernard (krb9975), Data Engineer
-"""
-
 import argparse
 import os
 import sys
@@ -17,8 +10,7 @@ from sqlalchemy import create_engine, text
 DATABASE = "CFPB_CAPSTONE_DB"
 SCHEMA = "CFPB_SCHEMA"
 
-# CFPB CSV header -> RAW_COMPLAINTS column (the 15 columns that table stages).
-# Narrative, consent and dispute columns are not staged in the deployed table.
+# CFPB CSV header -> RAW_COMPLAINTS column
 COLUMN_MAP = {
     "Date received": "DATE_RECEIVED",
     "Product": "PRODUCT",
@@ -113,7 +105,7 @@ CLEAR_SQL = [
 ]
 
 POPULATE_SQL = [
-    # Companies: one row per distinct, trimmed company name
+    # Companies: one row per distinct company name
     """
     INSERT INTO FINANCIAL_COMPANIES (company_name)
     SELECT DISTINCT TRIM(company)
@@ -142,7 +134,7 @@ POPULATE_SQL = [
         LEFT(COALESCE(NULLIF(TRIM(zip_code), ''), '00000'), 10)
     FROM RAW_COMPLAINTS
     """,
-    # Fact table: look up each surrogate key from its dimension
+    # Fact table
     """
     INSERT INTO CONSUMER_COMPLAINTS (
         complaint_id, date_received, date_sent_to_company,
