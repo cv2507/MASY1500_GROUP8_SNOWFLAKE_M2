@@ -17,5 +17,12 @@ c) Problem statement
 Our project will answer the question:
 “ Which financial institutions, products and regions generate the most consumer complaints, and how quickly and effectively do companies resolve them? “
 
+
 Specifically, we will measure dispute resolution speed and timely-response rates by company, rank institutions on how often consumers dispute their response, identify the top grievance issues by state and by product type, and track how complaint volumes and resolution performance have changed over time. These questions will drive our design decisions: the schema needs clean company and product dimensions to make rankings reliable, a location dimension to support regional analysis, and date fields structured for time-series queries. The end result should let a compliance or customer experience analyst see at a glance where consumer pain points are concentrated and which institutions are falling behind their peers.
+
+updated to : “Which financial institutions, products and regions generate the most consumer complaints, and how well do companies respond to them?”
+
+Specifically, we will rank institutions by complaint volume and by their timely-response rate, and measure how often each company resolves complaints with monetary or non-monetary relief rather than an explanation alone. We will also identify the top grievance issues by state and by product type, and track how complaint volumes and response outcomes have changed over time. These questions drive our design: clean company and product dimensions make rankings reliable, a location dimension supports regional analysis, and date fields support time-series queries. The result should let a compliance or customer experience analyst see where consumer pain points are concentrated and which institutions are falling behind their peers. 
+
+
 
