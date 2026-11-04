@@ -13,7 +13,7 @@ It comfortably exceeds the 10,000-record minimum and is large enough to make per
 It is realistically messy. It has missing values, inconsistent company name spellings, free-text fields, blank ZIP codes and mixed date formats, which gives us real material for the Python DQA report rather than a dataset that is already clean. The raw file is fully denormalised, one wide table with repeating company, product, issue and location values, so normalising it into 3NF is a meaningful exercise rather than a formality.
 The business questions are clear and useful. Anyone working in financial services, compliance or customer experience would want to know which institutions resolve disputes fastest and where complaints cluster.
 
-##c) Problem statement
+## c) Problem statement
 Our project will answer the question:
 “ Which financial institutions, products and regions generate the most consumer complaints, and how quickly and effectively do companies resolve them? “
 
