@@ -126,10 +126,10 @@ INSERT INTO CONSUMER_COMPLAINTS (
     issue_id,
     location_id,
     submitted_via,
-    company_response_to_consumer,
+    company_response,
     timely_response,
     consumer_disputed,
-    consumer_consent_provided
+    consumer_consent
 )
 SELECT
     TRY_CAST(r.complaint_id AS BIGINT),
