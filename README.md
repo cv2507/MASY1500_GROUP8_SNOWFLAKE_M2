@@ -14,11 +14,6 @@ It is realistically messy. It has missing values, inconsistent company name spel
 The business questions are clear and useful. Anyone working in financial services, compliance or customer experience would want to know which institutions resolve disputes fastest and where complaints cluster.
 
 ## c) Problem statement
-Our project will answer the question:
-“ Which financial institutions, products and regions generate the most consumer complaints, and how quickly and effectively do companies resolve them? “
-
-
-Specifically, we will measure dispute resolution speed and timely-response rates by company, rank institutions on how often consumers dispute their response, identify the top grievance issues by state and by product type, and track how complaint volumes and resolution performance have changed over time. These questions will drive our design decisions: the schema needs clean company and product dimensions to make rankings reliable, a location dimension to support regional analysis, and date fields structured for time-series queries. The end result should let a compliance or customer experience analyst see at a glance where consumer pain points are concentrated and which institutions are falling behind their peers.
 
 updated to : “Which financial institutions, products and regions generate the most consumer complaints, and how well do companies respond to them?”
 
