@@ -1,0 +1,47 @@
+Group 8 CFPB Capstone Data Dictionary: CFPB_CAPSTONE_DB.CFPB_SCHEMA,,,,,
+"Source: 02_CFPB_3NF_DDL_Schema in the team GitHub repo. Snowflake records PK, FK and UNIQUE but does not enforce them; only NOT NULL is enforced. Primary key columns are not nullable.",,,,,
+,,,,,
+Table,Column name,Data type,Nullable (Y/N),Constraints,Description
+FINANCIAL_COMPANIES,company_id,INT (AUTOINCREMENT),N,PRIMARY KEY,Unique number assigned to each financial company. Generated automatically.
+FINANCIAL_COMPANIES,company_name,VARCHAR(255),N,"NOT NULL, UNIQUE","Name of the company the complaint was sent to, trimmed of extra spaces. Each name is stored once."
+FINANCIAL_PRODUCTS,product_id,INT (AUTOINCREMENT),N,PRIMARY KEY,Unique number for each product and sub-product pair. Generated automatically.
+FINANCIAL_PRODUCTS,product_name,VARCHAR(255),N,NOT NULL,"Broad product the complaint is about, e.g. Credit card, Mortgage, Student loan."
+FINANCIAL_PRODUCTS,sub_product_name,VARCHAR(255),Y,DEFAULT 'N/A',"More specific product type within the product, e.g. General-purpose credit card. 'N/A' when the CFPB gives no sub-product."
+GRIEVANCE_ISSUES,issue_id,INT (AUTOINCREMENT),N,PRIMARY KEY,Unique number for each issue and sub-issue pair. Generated automatically.
+GRIEVANCE_ISSUES,issue_name,VARCHAR(255),N,NOT NULL,"Main problem the consumer complained about, e.g. Incorrect information on your report."
+GRIEVANCE_ISSUES,sub_issue_name,VARCHAR(255),Y,DEFAULT 'N/A',More specific detail on the issue. 'N/A' when the CFPB gives no sub-issue.
+GEOGRAPHIC_LOCATIONS,location_id,INT (AUTOINCREMENT),N,PRIMARY KEY,Unique number for each state and ZIP code pair. Generated automatically.
+GEOGRAPHIC_LOCATIONS,state_code,VARCHAR(10),Y,DEFAULT 'UNKNOWN',"Two-letter state or territory code of the consumer, e.g. NY. 'UNKNOWN' when blank in the source."
+GEOGRAPHIC_LOCATIONS,zip_code,VARCHAR(20),Y,DEFAULT '00000',Consumer's ZIP code as published by the CFPB. Some are partly masked (e.g. XXXXX). '00000' when blank in the source.
+CONSUMER_COMPLAINTS,complaint_id,BIGINT,N,PRIMARY KEY,Unique CFPB identifier for each complaint. Rows without a valid numeric ID are rejected on load.
+CONSUMER_COMPLAINTS,date_received,DATE,Y,,Date the CFPB received the complaint. NULL if the source date could not be read as YYYY-MM-DD.
+CONSUMER_COMPLAINTS,date_sent_to_company,DATE,Y,,Date the CFPB forwarded the complaint to the company. NULL if the source date could not be read as YYYY-MM-DD.
+CONSUMER_COMPLAINTS,company_id,INT,Y,FOREIGN KEY → FINANCIAL_COMPANIES(company_id),Links the complaint to the company it was sent to.
+CONSUMER_COMPLAINTS,product_id,INT,Y,FOREIGN KEY → FINANCIAL_PRODUCTS(product_id),Links the complaint to its product and sub-product.
+CONSUMER_COMPLAINTS,issue_id,INT,Y,FOREIGN KEY → GRIEVANCE_ISSUES(issue_id),Links the complaint to its issue and sub-issue.
+CONSUMER_COMPLAINTS,location_id,INT,Y,FOREIGN KEY → GEOGRAPHIC_LOCATIONS(location_id),Links the complaint to the consumer's state and ZIP code.
+CONSUMER_COMPLAINTS,submitted_via,VARCHAR(100),Y,,"Channel the complaint came in through, e.g. Web, Phone, Referral. 'Unknown' when blank in the source."
+CONSUMER_COMPLAINTS,company_response,VARCHAR(255),Y,,"How the company responded, e.g. Closed with explanation, Closed with monetary relief. Set to 'In Progress' when blank in the source."
+CONSUMER_COMPLAINTS,timely_response,VARCHAR(10),Y,,Whether the company responded within the CFPB's time limit (Yes/No). Set to 'Yes' when blank in the source.
+CONSUMER_COMPLAINTS,consumer_disputed,VARCHAR(10),Y,,Whether the consumer disputed the company's response. Currently loaded as 'N/A' for all rows (not in the staging table).
+CONSUMER_COMPLAINTS,consumer_consent,VARCHAR(100),Y,,Whether the consumer agreed to publish their narrative. Currently loaded as 'N/A' for all rows (not in the staging table).
+COMPLAINT_DQA_AUDIT,audit_id,INT (AUTOINCREMENT),N,PRIMARY KEY,Unique number for each load batch logged. Generated automatically.
+COMPLAINT_DQA_AUDIT,batch_id,VARCHAR(100),Y,,Label identifying the load run.
+COMPLAINT_DQA_AUDIT,records_ingested,INT,Y,,Number of rows successfully loaded in that batch.
+COMPLAINT_DQA_AUDIT,records_rejected,INT,Y,,Number of rows rejected in that batch (e.g. invalid complaint ID).
+COMPLAINT_DQA_AUDIT,load_timestamp,TIMESTAMP,Y,DEFAULT CURRENT_TIMESTAMP(),Date and time the batch was loaded. Filled in automatically.
+RAW_COMPLAINTS (staging),date_received,VARCHAR,Y,,"Date the CFPB received the complaint, as text from the CSV."
+RAW_COMPLAINTS (staging),product,VARCHAR,Y,,Product name as text from the CSV.
+RAW_COMPLAINTS (staging),sub_product,VARCHAR,Y,,Sub-product name as text from the CSV.
+RAW_COMPLAINTS (staging),issue,VARCHAR,Y,,Issue as text from the CSV.
+RAW_COMPLAINTS (staging),sub_issue,VARCHAR,Y,,Sub-issue as text from the CSV.
+RAW_COMPLAINTS (staging),company_public_response,VARCHAR,Y,,Company's optional public statement. Not carried into the 3NF tables.
+RAW_COMPLAINTS (staging),company,VARCHAR,Y,,"Company name as text from the CSV, before trimming."
+RAW_COMPLAINTS (staging),state,VARCHAR,Y,,Consumer's state as text from the CSV.
+RAW_COMPLAINTS (staging),zip_code,VARCHAR,Y,,Consumer's ZIP code as text from the CSV.
+RAW_COMPLAINTS (staging),tags,VARCHAR,Y,,"Optional labels such as Older American or Servicemember. Can hold several values in one cell, so not carried into the 3NF tables."
+RAW_COMPLAINTS (staging),submitted_via,VARCHAR,Y,,Submission channel as text from the CSV.
+RAW_COMPLAINTS (staging),date_sent_to_company,VARCHAR,Y,,"Date sent to the company, as text from the CSV."
+RAW_COMPLAINTS (staging),company_response_to_consumer,VARCHAR,Y,,Company's response as text from the CSV.
+RAW_COMPLAINTS (staging),timely_response,VARCHAR,Y,,Timely response flag as text from the CSV.
+RAW_COMPLAINTS (staging),complaint_id,VARCHAR,Y,,Complaint ID as text from the CSV. Cast to a number when loaded into CONSUMER_COMPLAINTS.
