@@ -1,5 +1,5 @@
 
--- Milestone 3 & 4: SQL Analytics Draft 
+-- Milestone 3: SQL Analytics Draft 
 -- MASY1-GC1500 Group 8, CFPB Consumer Complaints
  
 use database cfpb_capstone_db;
@@ -130,84 +130,4 @@ from consumer_complaints cc
 join financial_products fp on fp.product_id = cc.product_id
 group by fp.product_name
 order by avg_days_to_company desc;
-
-
--- Q11. Which sub-products generate the most complaints within Credit Reporting?
--- Why: breaks down the largest product category from Q2 to pinpoint specific reporting failures
-
-select fp.product_name, fp.sub_product_name, count(*) as complaint_count,
-       round(ratio_to_report(count(*)) over () * 100, 2) as pct_of_credit_reporting
-from consumer_complaints cc
-join financial_products fp on fp.product_id = cc.product_id
-where fp.product_name ilike '%credit reporting%'
-group by fp.product_name, fp.sub_product_name
-order by complaint_count desc;
-
-
--- Q12. Which submission channels do consumers use most, and how do timely-response rates compare across channels?
--- Why: shows whether web submissions or referrals receive faster company handling
-
-select cc.submitted_via, count(*) as complaint_count,
-       round(ratio_to_report(count(*)) over () * 100, 2) as pct_of_complaints,
-       round(sum(case when cc.timely_response = 'Yes' then 1 else 0 end) * 100.0 / count(*), 2) as pct_timely
-from consumer_complaints cc
-group by cc.submitted_via
-order by complaint_count desc;
-
-
--- Q13. How do company response outcomes vary across the top 5 most-complained-about institutions?
--- Why: combines Q1 and Q6 to compare whether high-volume firms rely on explanations or provide tangible relief
-
-with top_5_companies as (
-    select company_id
-    from consumer_complaints
-    group by company_id
-    order by count(*) desc
-    limit 5
-)
-select fc.company_name, cc.company_response, count(*) as complaint_count,
-       round(ratio_to_report(count(*)) over (partition by fc.company_name) * 100, 2) as pct_within_company
-from consumer_complaints cc
-join financial_companies fc on fc.company_id = cc.company_id
-join top_5_companies t5 on t5.company_id = cc.company_id
-group by fc.company_name, cc.company_response
-order by fc.company_name, complaint_count desc;
-
-
--- Q14. Which financial products have the highest rate of consumer relief (monetary or non-monetary)?
--- Why: extends Q7 from company level to product level to see where consumers receive tangible remedies
-
-select fp.product_name, count(*) as total_complaints,
-       sum(case when cc.company_response ilike '%relief%' then 1 else 0 end) as relief_count,
-       round(sum(case when cc.company_response ilike '%relief%' then 1 else 0 end) * 100.0 / count(*), 2) as pct_with_relief
-from consumer_complaints cc
-join financial_products fp on fp.product_id = cc.product_id
-group by fp.product_name
-order by pct_with_relief desc;
-
-
--- Q15. How have monthly complaint volumes and timely-response rates trended over time?
--- Why: adds a longitudinal view to test whether industry responsiveness is improving or declining across months
-
-select date_trunc('month', cc.date_received) as complaint_month,
-       count(*) as total_complaints,
-       round(sum(case when cc.timely_response = 'Yes' then 1 else 0 end) * 100.0 / count(*), 2) as pct_timely
-from consumer_complaints cc
-group by complaint_month
-order by complaint_month;
-
--- Q16. How do timely-response and consumer-relief rates vary across the 10 most common complaint issues?
--- Why: shows whether the highest-volume consumer problems receive timely handling and tangible relief
-
-select gi.issue_name, count(*) as complaint_count,
-       round(sum(case when cc.timely_response = 'Yes' then 1 else 0 end) * 100.0 / count(*), 2) as pct_timely,
-       round(sum(case when cc.company_response ilike '%relief%' then 1 else 0 end) * 100.0 / count(*), 2) as pct_with_relief
-from consumer_complaints cc
-join grievance_issues gi on gi.issue_id = cc.issue_id
-group by gi.issue_name
-order by complaint_count desc
-limit 10;
-
---End of Script--
- 
 
