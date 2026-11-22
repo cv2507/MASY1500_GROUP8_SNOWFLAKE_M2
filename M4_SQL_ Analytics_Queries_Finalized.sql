@@ -55,7 +55,7 @@ limit 10;
  
 select fc.company_name, count(*) as total_complaints,
 sum(case when cc.timely_response = 'No' then 1 else 0 end) as late_count,
-round(sum(case when cc.timely_response = 'No' then 1 else 0 end) * 100 / count(*), 2) as pct_not_timely
+round(sum(case when cc.timely_response = 'No' then 1 else 0 end) * 100 / count(cc.timely_response), 2) as pct_not_timely
 from consumer_complaints cc
 join financial_companies fc on fc.company_id = cc.company_id
 group by fc.company_name
@@ -148,7 +148,7 @@ order by complaint_count desc;
 
 select cc.submitted_via, count(*) as complaint_count,
        round(ratio_to_report(count(*)) over () * 100, 2) as pct_of_complaints,
-       round(sum(case when cc.timely_response = 'Yes' then 1 else 0 end) * 100.0 / count(*), 2) as pct_timely
+       round(sum(case when cc.timely_response = 'Yes' then 1 else 0 end) * 100.0 / count(cc.timely_response), 2) as pct_timely
 from consumer_complaints cc
 group by cc.submitted_via
 order by complaint_count desc;
@@ -190,7 +190,7 @@ order by pct_with_relief desc;
 
 select date_trunc('month', cc.date_received) as complaint_month,
        count(*) as total_complaints,
-       round(sum(case when cc.timely_response = 'Yes' then 1 else 0 end) * 100.0 / count(*), 2) as pct_timely
+       round(sum(case when cc.timely_response = 'Yes' then 1 else 0 end) * 100.0 / count(cc.timely_response), 2) as pct_timely
 from consumer_complaints cc
 group by complaint_month
 order by complaint_month;
@@ -199,7 +199,7 @@ order by complaint_month;
 -- Why: shows whether the highest-volume consumer problems receive timely handling and tangible relief
 
 select gi.issue_name, count(*) as complaint_count,
-       round(sum(case when cc.timely_response = 'Yes' then 1 else 0 end) * 100.0 / count(*), 2) as pct_timely,
+       round(sum(case when cc.timely_response = 'Yes' then 1 else 0 end) * 100.0 / count(cc.timely_response), 2) as pct_timely,
        round(sum(case when cc.company_response ilike '%relief%' then 1 else 0 end) * 100.0 / count(*), 2) as pct_with_relief
 from consumer_complaints cc
 join grievance_issues gi on gi.issue_id = cc.issue_id
