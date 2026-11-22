@@ -147,8 +147,8 @@ POPULATE_SQL = [
         TRY_TO_DATE(r.date_sent_to_company, 'YYYY-MM-DD'),
         c.company_id, p.product_id, i.issue_id, l.location_id,
         COALESCE(NULLIF(TRIM(r.submitted_via), ''), 'Unknown'),
-        COALESCE(NULLIF(TRIM(r.company_response_to_consumer), ''), 'In Progress'),
-        COALESCE(NULLIF(TRIM(r.timely_response), ''), 'Yes'),
+        NULLIF(TRIM(r.company_response_to_consumer), ''),
+        NULLIF(TRIM(r.timely_response), ''),
         'N/A',
         'N/A'
     FROM RAW_COMPLAINTS r
